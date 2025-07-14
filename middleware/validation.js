@@ -1,5 +1,3 @@
-
-
 const Joi = require('joi');
 
 const permitApplicationSchema = Joi.object({
@@ -44,8 +42,8 @@ const permitApplicationSchema = Joi.object({
   shipmentDetails: Joi.object({
     originCountry: Joi.string().trim().min(2).max(50).required(),
     destinationCountry: Joi.string().trim().min(2).max(50).required(),
-    transportMethod: Joi.string().valid('air', 'sea', 'land', 'mail').required(),
-    expectedShipmentDate: Joi.date().min('now').required(),
+    transportMethod: Joi.string().valid('air', 'sea', 'land', 'rail').required(),
+    expectedShipmentDate: Joi.date().iso().greater('now').required(),
     portOfEntry: Joi.string().trim().min(2).max(100).required()
   }).required(),
 
@@ -57,15 +55,15 @@ const permitApplicationSchema = Joi.object({
       format: Joi.string().required(),
       resourceType: Joi.string().required()
     })
-  ).min(1).required(),
+  ).optional(),
 
   additionalInfo: Joi.object({
-    specialHandling: Joi.string().trim().max(500).allow(''),
+    specialHandling: Joi.string().trim().max(1000).allow(''),
     emergencyContact: Joi.object({
       name: Joi.string().trim().min(2).max(100).allow(''),
       phone: Joi.string().pattern(/^[\+\-\s\(\)\d]+$/).min(10).max(20).allow(''),
-      email: Joi.string().email().required()
-    }).required()
+      email: Joi.string().email().allow('')
+    }).allow(null)
   }).allow(null)
 });
 
