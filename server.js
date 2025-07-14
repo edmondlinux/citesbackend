@@ -56,14 +56,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/permits', permitRoutes);
 app.use('/api/uploads', uploadRoutes);
 
-// Serve static files from frontend build in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-  });
-}
+// Backend API only - no static file serving
 
 // Global error handler
 app.use((err, req, res, next) => {
