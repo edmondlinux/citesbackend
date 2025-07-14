@@ -25,11 +25,9 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS configuration
+// CORS configuration - Accept all origins
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000', /\.replit\.dev$/],
+  origin: true,
   credentials: true
 }));
 
