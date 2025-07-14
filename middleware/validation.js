@@ -1,4 +1,5 @@
 
+
 const Joi = require('joi');
 
 const permitApplicationSchema = Joi.object({
@@ -61,8 +62,8 @@ const permitApplicationSchema = Joi.object({
   additionalInfo: Joi.object({
     specialHandling: Joi.string().trim().max(500).allow(''),
     emergencyContact: Joi.object({
-      name: Joi.string().trim().min(2).max(100).required(),
-      phone: Joi.string().pattern(/^[\+\-\s\(\)\d]+$/).min(10).max(20).required(),
+      name: Joi.string().trim().min(2).max(100).allow(''),
+      phone: Joi.string().pattern(/^[\+\-\s\(\)\d]+$/).min(10).max(20).allow(''),
       email: Joi.string().email().required()
     }).required()
   }).allow(null)
