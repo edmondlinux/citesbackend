@@ -1,98 +1,71 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
+const connectDB = require('./config/database');
+const permitRoutes = require('./routes/permits');
+const errorHandler = require('./middleware/errorHandler');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 5001;
 
-// Import routes
-const permitRoutes = require('./routes/permitRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
+// Connect to database
+connectDB();
+
+// Trust proxy for Replit environment
+app.set('trust proxy', true);
 
 // Security middleware
 app.use(helmet());
 
-// Trust proxy for Replit
-app.set('trust proxy', true);
-
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
 });
 app.use('/api/', limiter);
 
-// CORS configuration - Accept all origins
+// CORS configuration - Allow all origins
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  optionsSuccessStatus: 200 // For legacy browser support
 }));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// Add request logging for debugging
-app.use('/api', (req, res, next) => {
-  console.log(`API Request: ${req.method} ${req.originalUrl}`);
-  next();
-});
-
-// Health check endpoint
+// Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     status: 'OK', 
-    timestamp: new Date().toISOString(),
-    service: 'CITES Backend API'
+    message: 'CITES Permit Backend is running',
+    timestamp: new Date().toISOString()
   });
 });
 
-// API routes
-app.use('/api/permits', permitRoutes);
-app.use('/api/uploads', uploadRoutes);
+// Routes
+app.use('/api/permits', require('./routes/permits'));
+app.use('/api/payments', require('./routes/payments'));
 
-// Backend API only - no static file serving
+// Error handling middleware
+app.use(errorHandler);
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-
-  if (err.type === 'entity.parse.failed') {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid JSON format'
-    });
-  }
-
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({
-      success: false,
-      message: 'File size too large'
-    });
-  }
-
-  res.status(500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message
-  });
-});
-
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'API endpoint not found'
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Route not found' 
   });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Backend server running on http://0.0.0.0:${PORT}`);
+  console.log(`Environment: ${process.env.REACT_APP_NODE_ENV || 'development'}`);
 });
 
 module.exports = app;

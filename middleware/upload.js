@@ -1,68 +1,47 @@
 
 const multer = require('multer');
+const path = require('path');
 
-// Configure multer for memory storage
-const storage = multer.memoryStorage();
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, '/tmp') // Use tmp directory in Replit environment
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
 
+// File filter to validate file types
 const fileFilter = (req, file, cb) => {
-  // Allowed file types
+  // Allow common document and image formats
   const allowedTypes = [
     'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'image/jpeg',
     'image/jpg',
     'image/png',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'image/gif',
+    'text/plain'
   ];
-  
+
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only PDF, JPG, PNG, DOC, and DOCX files are allowed.'), false);
+    cb(new Error('Invalid file type. Only PDF, DOC, DOCX, JPG, JPEG, PNG, GIF, and TXT files are allowed.'), false);
   }
 };
 
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
     files: 10 // Maximum 10 files
   },
   fileFilter: fileFilter
 });
 
-const uploadMiddleware = (req, res, next) => {
-  const uploadFiles = upload.array('documents', 10);
-  
-  uploadFiles(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({
-          success: false,
-          message: 'File size too large. Maximum 10MB per file allowed.'
-        });
-      }
-      if (err.code === 'LIMIT_FILE_COUNT') {
-        return res.status(400).json({
-          success: false,
-          message: 'Too many files. Maximum 10 files allowed.'
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: 'File upload error: ' + err.message
-      });
-    } else if (err) {
-      return res.status(400).json({
-        success: false,
-        message: err.message
-      });
-    }
-    
-    next();
-  });
-};
-
-module.exports = {
-  uploadMiddleware
-};
+module.exports = upload;
